@@ -32,6 +32,25 @@ def init_db(data_folder):
     return con
 # @end sqlite_import
 
+# @begin dish_OpenRefine_cleaning
+# @in dish
+# @out OR_cleaned_dish
+# @end dish_OpenRefine_cleaning
+
+# @begin menupage_OpenRefine_cleaning
+# @in menu_page
+# @out OR_cleaned_menu_page
+# @end menupage_OpenRefine_cleaning
+
+# @begin menuitem_OpenRefine_cleaning
+# @in menu_item
+# @out OR_cleaned_menu_item
+# @end menuitem_OpenRefine_cleaning
+
+# @begin menu_OpenRefine_cleaning
+# @in menu
+# @out OR_cleaned_menu
+# @end menu_OpenRefine_cleaning
 
 def export_table(table_name, file_name, con):
     df = pd.read_sql_query('SELECT * FROM ' + table_name, con)
@@ -42,7 +61,7 @@ def export_table(table_name, file_name, con):
 
 # @begin sqlite_export
 # @in dish_agg
-# @in menu
+# @in OR_cleaned_menu
 # @in menu_item_agg
 # @in menu_page_v2
 # @out output_dish.csv @uri file:result/Dish.csv
@@ -63,8 +82,8 @@ def export_db(result_folder, con):
 
 def cleanup_missing_references(cursor):
     # @begin remove_invalid_menu_pages
-    # @in menu_page
-    # @in menu
+    # @in OR_cleaned_menu_page
+    # @in OR_cleaned_menu
     # @out menu_page_v2
     cursor.execute('''
             DELETE FROM MenuPage WHERE id in (
@@ -76,8 +95,8 @@ def cleanup_missing_references(cursor):
     # @end remove_invalid_menu_pages
 
     # @begin remove_invalid_menu_items
-    # @in menu_item
-    # @in dish
+    # @in OR_cleaned_menu_item
+    # @in OR_cleaned_dish
     # @in menu_page_v2
     # @out menu_item_v2
     cursor.execute('''
@@ -100,7 +119,7 @@ def cleanup_missing_references(cursor):
 def check_reference_icv(cursor):
     # @begin check_menu_item_icv
     # @in menu_item_v2
-    # @in dish
+    # @in OR_cleaned_dish
     # @in menu_page_v2
     rows = cursor.execute('''
             SELECT MenuItem.id FROM MenuItem
@@ -118,7 +137,7 @@ def check_reference_icv(cursor):
 
     # @begin check_menu_page_icv
     # @in menu_page_v2
-    # @in menu
+    # @in OR_cleaned_menu
     rows = cursor.execute('''
                 SELECT MenuPage.id FROM MenuPage
                 LEFT JOIN Menu on MenuPage.menu_id = Menu.id
@@ -130,7 +149,7 @@ def check_reference_icv(cursor):
 
 def fix_missing_dish_dates(cursor):
     # @begin fix_dish_missing_dates
-    # @in dish
+    # @in OR_cleaned_dish
     # @out dish_v2
     cursor.execute('''
                 UPDATE Dish
