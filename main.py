@@ -13,12 +13,32 @@ import shutil
 # @out output_menu_item.csv @uri file:result/MenuItem.csv
 # @out output_menu_page.csv @uri file:result/MenuPage.csv
 
+# @begin dish_OpenRefine_cleaning
+# @in input_dish.csv
+# @out OR_cleaned_dish.csv @uri file:OR_cleaned/Dish.csv
+# @end dish_OpenRefine_cleaning
+
+# @begin menupage_OpenRefine_cleaning
+# @in input_menu_page.csv
+# @out OR_cleaned_menu_page.csv @uri file:OR_cleaned/MenuPage.csv
+# @end menupage_OpenRefine_cleaning
+
+# @begin menuitem_OpenRefine_cleaning
+# @in input_menu_item.csv
+# @out OR_cleaned_menu_item.csv @uri file:OR_cleaned/MenuItem.csv
+# @end menuitem_OpenRefine_cleaning
+
+# @begin menu_OpenRefine_cleaning
+# @in input_menu.csv
+# @out OR_cleaned_menu.csv @uri file:OR_cleaned/Menu.csv
+# @end menu_OpenRefine_cleaning
+
 
 # @begin sqlite_import
-# @in input_dish.csv
-# @in input_menu.csv
-# @in input_menu_item.csv
-# @in input_menu_page.csv
+# @in OR_cleaned_dish.csv
+# @in OR_cleaned_menu.csv
+# @in OR_cleaned_menu_item.csv
+# @in OR_cleaned_menu_page.csv
 # @out dish
 # @out menu
 # @out menu_item
@@ -32,26 +52,6 @@ def init_db(data_folder):
     return con
 # @end sqlite_import
 
-# @begin dish_OpenRefine_cleaning
-# @in dish
-# @out OR_cleaned_dish
-# @end dish_OpenRefine_cleaning
-
-# @begin menupage_OpenRefine_cleaning
-# @in menu_page
-# @out OR_cleaned_menu_page
-# @end menupage_OpenRefine_cleaning
-
-# @begin menuitem_OpenRefine_cleaning
-# @in menu_item
-# @out OR_cleaned_menu_item
-# @end menuitem_OpenRefine_cleaning
-
-# @begin menu_OpenRefine_cleaning
-# @in menu
-# @out OR_cleaned_menu
-# @end menu_OpenRefine_cleaning
-
 def export_table(table_name, file_name, con):
     df = pd.read_sql_query('SELECT * FROM ' + table_name, con)
     if 'index' in df.columns:
@@ -61,7 +61,7 @@ def export_table(table_name, file_name, con):
 
 # @begin sqlite_export
 # @in dish_agg
-# @in OR_cleaned_menu
+# @in menu
 # @in menu_item_agg
 # @in menu_page_v2
 # @out output_dish.csv @uri file:result/Dish.csv
@@ -82,8 +82,8 @@ def export_db(result_folder, con):
 
 def cleanup_missing_references(cursor):
     # @begin remove_invalid_menu_pages
-    # @in OR_cleaned_menu_page
-    # @in OR_cleaned_menu
+    # @in menu_page
+    # @in menu
     # @out menu_page_v2
     cursor.execute('''
             DELETE FROM MenuPage WHERE id in (
@@ -95,8 +95,8 @@ def cleanup_missing_references(cursor):
     # @end remove_invalid_menu_pages
 
     # @begin remove_invalid_menu_items
-    # @in OR_cleaned_menu_item
-    # @in OR_cleaned_dish
+    # @in menu_item
+    # @in dish
     # @in menu_page_v2
     # @out menu_item_v2
     cursor.execute('''
@@ -119,7 +119,7 @@ def cleanup_missing_references(cursor):
 def check_reference_icv(cursor):
     # @begin check_menu_item_icv
     # @in menu_item_v2
-    # @in OR_cleaned_dish
+    # @in dish
     # @in menu_page_v2
     rows = cursor.execute('''
             SELECT MenuItem.id FROM MenuItem
@@ -137,7 +137,7 @@ def check_reference_icv(cursor):
 
     # @begin check_menu_page_icv
     # @in menu_page_v2
-    # @in OR_cleaned_menu
+    # @in menu
     rows = cursor.execute('''
                 SELECT MenuPage.id FROM MenuPage
                 LEFT JOIN Menu on MenuPage.menu_id = Menu.id
@@ -149,7 +149,7 @@ def check_reference_icv(cursor):
 
 def fix_missing_dish_dates(cursor):
     # @begin fix_dish_missing_dates
-    # @in OR_cleaned_dish
+    # @in dish
     # @out dish_v2
     cursor.execute('''
                 UPDATE Dish
@@ -223,7 +223,7 @@ def aggregate_dishes(cursor):
 # @end data_cleaning_workflow
 
 if __name__ == '__main__':
-    con = init_db('data')
+    con = init_db('OR_cleaned')
     cursor = con.cursor()
     cleanup_missing_references(cursor)
     check_reference_icv(cursor)
