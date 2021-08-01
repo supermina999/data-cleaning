@@ -1,0 +1,140 @@
+@begin data_cleaning_workflow
+@in input_dish.csv @uri file:data/Dish.csv
+@in input_menu.csv @uri file:data/Menu.csv
+@in input_menu_item.csv @uri file:data/MenuItem.csv
+@in input_menu_page.csv @uri file:data/MenuPage.csv
+@out output_dish.csv @uri file:result/Dish.csv
+@out output_menu.csv @uri file:result/Menu.csv
+@out output_menu_item.csv @uri file:result/MenuItem.csv
+@out output_menu_page.csv @uri file:result/MenuPage.csv
+@begin dish_OpenRefine_cleaning
+@in input_dish.csv
+@out OR_cleaned_dish.csv @uri file:OR_cleaned/Dish.csv
+@end dish_OpenRefine_cleaning
+@begin menupage_OpenRefine_cleaning
+@in input_menu_page.csv
+@out OR_cleaned_menu_page.csv @uri file:OR_cleaned/MenuPage.csv
+@end menupage_OpenRefine_cleaning
+@begin menuitem_OpenRefine_cleaning
+@in input_menu_item.csv
+@out OR_cleaned_menu_item.csv @uri file:OR_cleaned/MenuItem.csv
+@end menuitem_OpenRefine_cleaning
+@begin menu_OpenRefine_cleaning
+@in input_menu.csv
+@out OR_cleaned_menu.csv @uri file:OR_cleaned/Menu.csv
+@end menu_OpenRefine_cleaning
+@begin sqlite_import
+@in OR_cleaned_dish.csv
+@in OR_cleaned_menu.csv
+@in OR_cleaned_menu_item.csv
+@in OR_cleaned_menu_page.csv
+@out dish
+@out menu
+@out menu_item
+@out menu_page
+@end sqlite_import
+@begin sqlite_export
+@in dish_agg
+@in menu
+@in menu_item_agg
+@in menu_page_v2
+@out output_dish.csv @uri file:result/Dish.csv
+@out output_menu.csv @uri file:result/Menu.csv
+@out output_menu_item.csv @uri file:result/MenuItem.csv
+@out output_menu_page.csv @uri file:result/MenuPage.csv
+@end sqlite_export
+@begin remove_invalid_menu_pages
+@in menu_page
+@in menu
+@out menu_page_v2
+DELETE FROM MenuPage WHERE id in (
+SELECT MenuPage.id FROM MenuPage
+LEFT JOIN Menu on MenuPage.menu_id = Menu.id
+WHERE Menu.id is null
+)
+@end remove_invalid_menu_pages
+@begin remove_invalid_menu_items
+@in menu_item
+@in dish
+@in menu_page_v2
+@out menu_item_v2
+DELETE FROM MenuItem WHERE id in (
+SELECT MenuItem.id FROM MenuItem
+LEFT JOIN MenuPage on MenuItem.menu_page_id = MenuPage.id
+WHERE MenuPage.id is null
+)
+DELETE FROM MenuItem WHERE id in (
+SELECT MenuItem.id FROM MenuItem
+LEFT JOIN Dish on MenuItem.dish_id = Dish.id
+WHERE Dish.id is null
+)
+@end remove_invalid_menu_items
+@begin check_menu_item_icv
+@in menu_item_v2
+@in dish
+@in menu_page_v2
+SELECT MenuItem.id FROM MenuItem
+LEFT JOIN Dish on MenuItem.dish_id = Dish.id
+WHERE Dish.id is null
+SELECT MenuItem.id FROM MenuItem
+LEFT JOIN MenuPage on MenuItem.menu_page_id = MenuPage.id
+WHERE MenuPage.id is null
+@end check_menu_item_icv
+@begin check_menu_page_icv
+@in menu_page_v2
+@in menu
+SELECT MenuPage.id FROM MenuPage
+LEFT JOIN Menu on MenuPage.menu_id = Menu.id
+WHERE Menu.id is null
+@end check_menu_page_icv
+@begin fix_dish_missing_dates
+@in dish
+@out dish_v2
+UPDATE Dish
+SET first_appeared = null
+WHERE first_appeared = 0
+UPDATE Dish
+SET last_appeared = null
+WHERE last_appeared = 0
+@end fix_dish_missing_dates
+@begin check_dish_dates_icv
+@in dish_v2
+SELECT * FROM Dish
+WHERE first_appeared > last_appeared
+@end check_dish_dates_icv
+@begin aggregate_dishes
+@in dish_v2
+@out dish_agg
+CREATE TABLE DishAgg AS
+SELECT
+MIN(id) AS id,
+name,
+SUM(menus_appeared) AS menus_appeared,
+SUM(times_appeared) AS times_appeared,
+MIN(first_appeared) AS first_appeared,
+MAX(last_appeared) AS last_appeared,
+MIN(lowest_price) AS lowest_price,
+MAX(highest_price) AS highest_price
+FROM Dish
+GROUP BY name
+@end aggregate_dishes
+@begin create_dish_mapping
+@in dish_v2
+@in dish_agg
+@out dish_mapping
+CREATE TABLE DishMapping AS
+SELECT Dish.id AS id, DishAgg.id AS mid FROM Dish
+LEFT JOIN DishAgg on Dish.name = DishAgg.name
+@end create_dish_mapping
+@begin aggregate_menu_items
+@in menu_item_v2
+@in dish_mapping
+@out menu_item_agg
+CREATE TABLE MenuItemAgg AS
+SELECT MenuItem.id as id, menu_page_id, price, high_price,
+DishMapping.mid as dish_id,
+created_at, updated_at, xpos, ypos
+FROM MenuItem
+LEFT JOIN DishMapping on MenuItem.dish_id = DishMapping.id
+@end aggregate_menu_items
+@end data_cleaning_workflow

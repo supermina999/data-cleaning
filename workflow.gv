@@ -1,0 +1,119 @@
+digraph Workflow {
+rankdir=TB
+fontname=Helvetica; fontsize=18; labelloc=t
+label=data_cleaning_workflow
+subgraph cluster_workflow_box_outer { label=""; color=black; penwidth=2
+subgraph cluster_workflow_box_inner { label=""; penwidth=0
+node[shape=box style=filled fillcolor="#CCFFCC" peripheries=1 fontname=Helvetica]
+dish_OpenRefine_cleaning
+menupage_OpenRefine_cleaning
+menuitem_OpenRefine_cleaning
+menu_OpenRefine_cleaning
+sqlite_import
+sqlite_export
+remove_invalid_menu_pages
+remove_invalid_menu_items
+check_menu_item_icv
+check_menu_page_icv
+fix_dish_missing_dates
+check_dish_dates_icv
+aggregate_dishes
+create_dish_mapping
+aggregate_menu_items
+node[shape=box style="rounded,filled" fillcolor="#FFFFCC" peripheries=1 fontname=Helvetica]
+"output_dish.csv" [shape=record rankdir=LR label="{<f0> output_dish.csv |<f1> file\:result/Dish.csv}"];
+"output_menu.csv" [shape=record rankdir=LR label="{<f0> output_menu.csv |<f1> file\:result/Menu.csv}"];
+"output_menu_item.csv" [shape=record rankdir=LR label="{<f0> output_menu_item.csv |<f1> file\:result/MenuItem.csv}"];
+"output_menu_page.csv" [shape=record rankdir=LR label="{<f0> output_menu_page.csv |<f1> file\:result/MenuPage.csv}"];
+"input_dish.csv" [shape=record rankdir=LR label="{<f0> input_dish.csv |<f1> file\:data/Dish.csv}"];
+"input_menu_page.csv" [shape=record rankdir=LR label="{<f0> input_menu_page.csv |<f1> file\:data/MenuPage.csv}"];
+"input_menu_item.csv" [shape=record rankdir=LR label="{<f0> input_menu_item.csv |<f1> file\:data/MenuItem.csv}"];
+"input_menu.csv" [shape=record rankdir=LR label="{<f0> input_menu.csv |<f1> file\:data/Menu.csv}"];
+"OR_cleaned_dish.csv" [shape=record rankdir=LR label="{<f0> OR_cleaned_dish.csv |<f1> file\:OR_cleaned/Dish.csv}"];
+"OR_cleaned_menu.csv" [shape=record rankdir=LR label="{<f0> OR_cleaned_menu.csv |<f1> file\:OR_cleaned/Menu.csv}"];
+"OR_cleaned_menu_item.csv" [shape=record rankdir=LR label="{<f0> OR_cleaned_menu_item.csv |<f1> file\:OR_cleaned/MenuItem.csv}"];
+"OR_cleaned_menu_page.csv" [shape=record rankdir=LR label="{<f0> OR_cleaned_menu_page.csv |<f1> file\:OR_cleaned/MenuPage.csv}"];
+dish_agg
+menu
+menu_item_agg
+menu_page_v2
+menu_page
+menu_item
+dish
+menu_item_v2
+dish_v2
+dish_mapping
+node[shape=box style="rounded,filled" fillcolor="#FCFCFC" peripheries=1 fontname=Helvetica]
+dish_OpenRefine_cleaning -> "OR_cleaned_dish.csv"
+"input_dish.csv" -> dish_OpenRefine_cleaning
+menupage_OpenRefine_cleaning -> "OR_cleaned_menu_page.csv"
+"input_menu_page.csv" -> menupage_OpenRefine_cleaning
+menuitem_OpenRefine_cleaning -> "OR_cleaned_menu_item.csv"
+"input_menu_item.csv" -> menuitem_OpenRefine_cleaning
+menu_OpenRefine_cleaning -> "OR_cleaned_menu.csv"
+"input_menu.csv" -> menu_OpenRefine_cleaning
+sqlite_import -> dish
+sqlite_import -> menu
+sqlite_import -> menu_item
+sqlite_import -> menu_page
+"OR_cleaned_dish.csv" -> sqlite_import
+"OR_cleaned_menu.csv" -> sqlite_import
+"OR_cleaned_menu_item.csv" -> sqlite_import
+"OR_cleaned_menu_page.csv" -> sqlite_import
+sqlite_export -> "output_dish.csv"
+sqlite_export -> "output_menu.csv"
+sqlite_export -> "output_menu_item.csv"
+sqlite_export -> "output_menu_page.csv"
+dish_agg -> sqlite_export
+menu -> sqlite_export
+menu_item_agg -> sqlite_export
+menu_page_v2 -> sqlite_export
+remove_invalid_menu_pages -> menu_page_v2
+menu_page -> remove_invalid_menu_pages
+menu -> remove_invalid_menu_pages
+remove_invalid_menu_items -> menu_item_v2
+menu_item -> remove_invalid_menu_items
+dish -> remove_invalid_menu_items
+menu_page_v2 -> remove_invalid_menu_items
+menu_item_v2 -> check_menu_item_icv
+dish -> check_menu_item_icv
+menu_page_v2 -> check_menu_item_icv
+menu_page_v2 -> check_menu_page_icv
+menu -> check_menu_page_icv
+fix_dish_missing_dates -> dish_v2
+dish -> fix_dish_missing_dates
+dish_v2 -> check_dish_dates_icv
+aggregate_dishes -> dish_agg
+dish_v2 -> aggregate_dishes
+create_dish_mapping -> dish_mapping
+dish_v2 -> create_dish_mapping
+dish_agg -> create_dish_mapping
+aggregate_menu_items -> menu_item_agg
+menu_item_v2 -> aggregate_menu_items
+dish_mapping -> aggregate_menu_items
+}}
+subgraph cluster_input_ports_group_outer { label=""; penwidth=0
+subgraph cluster_input_ports_group_inner { label=""; penwidth=0
+node[shape=circle style="rounded,filled" fillcolor="#FFFFFF" peripheries=1 fontname=Helvetica width=0.2]
+"input_dish.csv_input_port" [label=""]
+"input_menu.csv_input_port" [label=""]
+"input_menu_item.csv_input_port" [label=""]
+"input_menu_page.csv_input_port" [label=""]
+}}
+subgraph cluster_output_ports_group_outer { label=""; penwidth=0
+subgraph cluster_output_ports_group_inner { label=""; penwidth=0
+node[shape=circle style="rounded,filled" fillcolor="#FFFFFF" peripheries=1 fontname=Helvetica width=0.2]
+"output_dish.csv_output_port" [label=""]
+"output_menu.csv_output_port" [label=""]
+"output_menu_item.csv_output_port" [label=""]
+"output_menu_page.csv_output_port" [label=""]
+}}
+"input_dish.csv_input_port" -> "input_dish.csv"
+"input_menu.csv_input_port" -> "input_menu.csv"
+"input_menu_item.csv_input_port" -> "input_menu_item.csv"
+"input_menu_page.csv_input_port" -> "input_menu_page.csv"
+"output_dish.csv" -> "output_dish.csv_output_port"
+"output_menu.csv" -> "output_menu.csv_output_port"
+"output_menu_item.csv" -> "output_menu_item.csv_output_port"
+"output_menu_page.csv" -> "output_menu_page.csv_output_port"
+}
